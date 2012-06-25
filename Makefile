@@ -1,4 +1,4 @@
-GTEST_DIR = /Users/eugen/gtest-1.6.0
+GTEST_DIR = test/gtest_files
 
 # Where to find user code.
 USER_DIR = 
