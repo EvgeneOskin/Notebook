@@ -32,36 +32,6 @@ void analyze_Age(unsigned short int goodness_INDEX, Person *analyzed_Person)
 {
   if (goodness_INDEX == 0)
     {
-      cout << "\033[0,31m   Did you input \"zero\" age, did you?\n\033[0,34m"
-	   << " (\'y\' to confim, smth else to abort)  \033[0m";
-      string Input_Information;
-      getline(cin, Input_Information);
-      
-      if ( Input_Information.compare("y") == 0)
-	analyzed_Person->Age = 0;
-      else
-	{
-	  cout << "   Are you want try again?\n\033[0,34m"
-	       << " (\'y\' to confim, smth else to abort)  \033[0m";
-	  getline(cin, Input_Information);
-	  
-	  if ( Input_Information.compare("y") == 0)
-	    {
-	      cout << "Age: ";
-	      getline(cin, Input_Information);
-	      analyze_Age(analyzed_Person->add_Age(atoi(Input_Information.c_str())), analyzed_Person);
-	    }
-	  else
-	    {
-	      cout << "   OK, I will think that you typed senseless information about Age of Person."
-		   << " Age will be \033[0,34m\"zero\"\033[0m.\n";
-	      analyzed_Person->Age = 0;
-	    }
-	}
-    }
-  
-  if (goodness_INDEX == 2)
-    {
       cout << "\033[0,31m   You inputed negative Age (how is it posible?!).\n"
 	   << " \033[0,34mTry again? (\'y\' to confim, smth else to abort)  \033[0m ";
       string Input_Information;
@@ -71,54 +41,61 @@ void analyze_Age(unsigned short int goodness_INDEX, Person *analyzed_Person)
 	{
 	  cout << "Age: ";
 	  getline(cin, Input_Information);
-	  analyze_Age(analyzed_Person->add_Age(atoi(Input_Information.c_str())), analyzed_Person);		
+	  
+	  int casted_Age = 0;
+	  try
+	    {
+	      casted_Age = boost::lexical_cast<int>(Input_Information);
+	    }
+	  catch (exception& e)
+	    {
+	      cout << "you type not a number, please try again" << endl;
+	      analyze_Age(0, analyzed_Person);
+	      return;
+	    }
+	  analyze_Age(analyzed_Person->add_Age(casted_Age), analyzed_Person);
 	}
       else
 	{
 	  cout << "   OK, I will think that you typed senseless information about Age of Person."
 	       << " Age will be \033[0,34m\"zero\"\033[0m.\n";
-	  analyzed_Person->Age = 0;
+	  analyzed_Person->add_Age(0);
 	}
     }
 }
 
 
-unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing, sqlite3 *out_db)
+unsigned short int analyze_input(string &analyzed_str, person_v &listing, sqlite3 *out_db)
 {
-  unsigned short int What_need_to_be_done_INDEX = 0;
-
   if (analyzed_str.compare("add") == 0)
     {
-      What_need_to_be_done_INDEX++;
-      Person* new_Person = new Person;
-      listing.push_back(new_Person);
-
+      listing.push_back(boost::shared_ptr<Person>(new Person()));
+      
       if (listing.size() != 1)
-	data_input(*(listing.end() - 1), (*(listing.end() - 2))->ID);
+	data_input((*(listing.end() - 1)).get(), ((*(listing.end() - 2)).get())->ID);
       else
-	data_input(*(listing.end() - 1), (*(listing.end() - 1))->ID);
+	data_input((*(listing.end() - 1)).get(), ((*(listing.end() - 1)).get())->ID);
+      return 1;
     }
   
   if (analyzed_str.compare("list_all") == 0)
     {
-      What_need_to_be_done_INDEX++;
-      if (listing.size() != 0)
+      if (!listing.empty())
 	print_all(listing);
       else
 	cout << "   No Person in list, please use \"add\" to add new Person.\n";
+      return 1;
     }
   if (analyzed_str.compare("list_last") == 0)
     {
-      What_need_to_be_done_INDEX++;
       if (print_input(listing) == 0)
 	cout << "   You do not enter a Person, please use \"add\" to add new Person.\n";
+      return 1;
     }
 
   if (analyzed_str.compare("clean") == 0)
     {
-      What_need_to_be_done_INDEX++;
-
-      if (listing.size() != 0)
+      if (!listing.empty())
 	{
 	  cout << "number of input? ";
 	  getline(cin, analyzed_str);
@@ -126,9 +103,19 @@ unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing,
 	  if (analyzed_str.compare("*") == 0)
 	    clean_all(listing);
 	  else
-	    {	  
-	      int cleaning_INDEX = atoi (analyzed_str.c_str());
-
+	    {
+	      
+	      int cleaning_INDEX = 0;
+	      try
+		{
+		  cleaning_INDEX = boost::lexical_cast<int>(analyzed_str);
+		}
+	      catch (exception& e)
+		{
+		  cout << "you type not a number, please try again" << endl;
+		  return 1;
+		}
+	      
 	      if(cleaning_INDEX > 0)
 		clean_input(cleaning_INDEX, listing);
 	      else
@@ -137,12 +124,11 @@ unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing,
 	}
       else
 	cout << "   No Person in list, please use \"add\" to add new Person.\n";
+      return 1;
     }
   if (analyzed_str.compare("delete") == 0)
     {
-      What_need_to_be_done_INDEX++;
-      
-      if (listing.size() != 0)
+      if (!listing.empty())
 	{
 
 	  cout << "number of input? ";
@@ -152,7 +138,16 @@ unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing,
 	    delete_all(listing);
 	  else
 	    {	  
-	      int deleting_INDEX = atoi (analyzed_str.c_str());
+	      int deleting_INDEX = 0;
+	      try
+		{
+		  deleting_INDEX = boost::lexical_cast<int>(analyzed_str);
+		}
+	      catch (exception& e)
+		{
+		  cout << "you type not a number, please try again" << endl;
+		  return 1;
+		}
 	      
 	      if(deleting_INDEX > 0)
 		delete_input(deleting_INDEX, listing);
@@ -162,12 +157,12 @@ unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing,
 	}
       else
 	cout << "   No Person in list, please use \"add\" to add new Person.\n";
+      return 1;
 
     }
   if (analyzed_str.compare("save") == 0)
     {
-      What_need_to_be_done_INDEX++;
-      if (listing.size() != 0)
+      if (!listing.empty())
 	{
 	  cout << "number of input? ";
 	  getline(cin, analyzed_str);
@@ -176,24 +171,32 @@ unsigned short int analyze_input(string &analyzed_str, vector<Person*> &listing,
 	    out_print_all(out_db, listing);
 	  else
 	    {
-	      int print_INDEX = atoi (analyzed_str.c_str());
-	      if(print_INDEX > 0)
-		out_print(out_db, listing, print_INDEX);
+	      int printing_INDEX = 0;
+	      try
+		{
+		  printing_INDEX = boost::lexical_cast<int>(analyzed_str);
+		}
+	      catch (exception& e)
+		{
+		  cout << "you type not a number, please try again" << endl;
+		  return 1;
+		}
+
+	      if(printing_INDEX >= 0)
+		out_print(out_db, listing, printing_INDEX);
 	      else
 		cout << "   Type number of Person who you want to save, or type \"*\" to save all input Persons.\n";
 	    }
 	}
       else
 	cout << "   No Person in list, please use \"add\" to add new Person.\n";
+      return 1;
     }
 
   if (analyzed_str.compare("quit") == 0)
-    What_need_to_be_done_INDEX += 2;;
+    return 2;
+  
+  cout << "   Type some one-word command what I know, please.\n";
 
-  if ((analyzed_str.size() == 0) || (What_need_to_be_done_INDEX == 0))
-    {
-      cout << "   Type some one-word command what I know, please.\n";
-    }
-
-  return What_need_to_be_done_INDEX;
+  return 0;
 }
